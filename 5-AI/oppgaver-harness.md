@@ -1,205 +1,193 @@
-# 🧰 Context engineering og AI harness
+# 🛠️ Workshop 1: Bygg første versjon av harnessen din
 
-## 📋 Sammendrag
+**Tid:** 60 min, med en pause på 5–10 min
 
-En AI-assistent er aldri bedre enn konteksten den får. I denne modulen lærer du å bygge en **AI harness**: et sett med filer i repoet ditt som gir GitHub Copilot det den trenger for å skrive kode som passer inn i *din* kodebase, hver gang.
+Du jobber i **ditt eget repo** fra tidligere samlinger. Workshopen har to spor:
 
-Du lærer:
+- 🟢 **Grunnspor (oppgave 1–4):** For deg som er ny med AI-assistenter, eller ikke har laget instruksjoner og skills før.
+- 🔵 **Ekspertspor (oppgave 5–7):** For deg som har tatt AI-Akademiet eller er komfortabel med Copilot. Gjør gjerne oppgave 1–3 raskt først.
 
-- hva en agent er, og hva en agent loop er
-- hva en harness består av
-- hvordan du skriver gode instruksjonsfiler
-- hvordan du pakker arbeidsflyter inn i **skills**
-- hvordan du vedlikeholder harnessen som en del av koden
-
-**Tidsplan:** 30 min teori, deretter 60 min workshop med en pause på 5–10 min.
-
-> 💡 Har du tatt **AI-Akademiet**? Da kjenner du igjen begrepene fra modulen *Context Engineering*. Her går vi videre og bygger en komplett harness i ditt eget repo.
+Du trenger ikke rekke alt. Det viktigste er at du går hjem med en harness som fungerer.
 
 ---
 
-## 🤖 Grunnlag: Hva er en agent?
+**Tips for hele workshopen:**
 
-En **språkmodell** (LLM) tar inn tekst og gir tekst tilbake. En **agent** er en språkmodell som kjører i en løkke og har tilgang til verktøy:
+- Oppgavene bruker **Copilot CLI**. Du starter den med `copilot` i terminalen, inne i repoet. Filene du lager virker også i VS Code.
+- Står du fast, spør AI-en først. Hvis den ikke klarer å hjelpe deg, spør kursholder eller sidemannen.
+- **Commit ofte.** Lag en egen branch før du starter, så kan du alltid gå tilbake:
 
-```
-┌──────────────────────────────────────────────┐
-│  1. Les oppgave + kontekst                   │
-│  2. Tenk: hva er neste steg?                 │
-│  3. Bruk et verktøy (les fil, kjør test ...) │
-│  4. Observer resultatet                      │
-│  5. Ferdig? Hvis nei → tilbake til 2         │
-└──────────────────────────────────────────────┘
+```bash
+git checkout -b feature/ai-harness
 ```
 
-Dette er **agent-løkken** (agent loop). Copilot gjør dette når du bruker agentmodus i VS Code eller kjører `copilot` i terminalen. Den leser filer, kjører kommandoer, ser på feilmeldinger og prøver igjen.
+---
 
-Modellen vet ingenting om prosjektet ditt utover det som ligger i **kontekstvinduet**:
+## 🟢 Oppgave 1: Mål utgangspunktet (10 min)
 
-- systeminstruksjoner
-- oppgaven din
-- filene den har lest
-- resultatene fra verktøyene den har brukt
+**Mål:** Se hvordan AI-en jobber i repoet ditt *uten* harness, så du har noe å sammenligne med.
 
-Alt annet må den gjette. Når den gjetter, skriver den *generisk* kode i stedet for *din* kode.
+**Steg:**
+1. Finn en **liten, konkret oppgave** i repoet ditt. Eksempler:
+   - et nytt endepunkt
+   - en ny valideringsregel
+   - en ny komponent
+   - en enhetstest for en eksisterende klasse
+2. Start Copilot CLI i repoet:
+   ```bash
+   copilot
+   ```
+3. Gi oppgaven, og skriv ned prompten **ordrett**. Du skal bruke den samme prompten igjen i oppgave 3.
+   > *«Lag et nytt endepunkt som returnerer alle aktive brukere. Skriv tester.»*
+4. Se på resultatet og noter:
+   - Følger koden mønstrene i repoet, som mappestruktur, navngiving og feilhåndtering?
+   - Brukte den rammeverkene og hjelpeklassene dere allerede har?
+   - Kjørte den testene?
+5. Lagre resultatet på en egen branch og gå tilbake:
+   ```bash
+   git checkout -b eksperiment/uten-harness && git add -A && git commit -m "uten harness"
+   git checkout feature/ai-harness
+   ```
+
+**Refleksjon:** Hva måtte du rettet før denne koden kunne gått til review?
 
 ---
 
-## 🧰 Hva er en AI harness?
+## 🟢 Oppgave 2: Lag instruksjonsfilen (15 min)
 
-> **Harness = modell + kontekst + verktøy + regler**
+**Mål:** Lag en kort instruksjonsfil som lærer AI-en hvordan *ditt* repo fungerer.
 
-Modellen velger du. Resten bygger du selv, og det bør ligge i repoet:
+**Steg:**
+1. Kjør `/init` i Copilot CLI. Den analyserer repoet og lager et utkast til en instruksjonsfil.
+2. **Les utkastet kritisk.** Stryk alt som:
+   - modellen ser selv i koden
+   - er generelle råd, som «skriv ren kode»
+   - er feil eller utdatert
+3. Legg til det modellen *ikke* kan vite, med utgangspunkt i notatene fra oppgave 1:
+   - eksakte kommandoer for bygg, test og lint
+   - konvensjoner som gikk galt i oppgave 1
+   - hjelpeklasser eller biblioteker den skal bruke
+   - ting som er forbudt
+4. Be gjerne AI-en om hjelp til å stramme inn teksten:
+   > *«Se gjennom instruksjonsfilen. Fjern alt som er åpenbart fra koden eller generelt, og gjør resten så kort og presist som mulig. Ikke legg til nye regler uten å spørre meg.»*
+5. Sjekk at filen er **under ca. 60 linjer**.
 
-| Byggekloss | Hva den gjør | Fil i Copilot |
-|---|---|---|
-| **Instruksjoner** | Regler og fakta som *alltid* gjelder | `AGENTS.md` / `.github/copilot-instructions.md` |
-| **Stibaserte instruksjoner** | Regler for bestemte deler av koden | `.github/instructions/*.instructions.md` |
-| **Skills** | Kunnskap og arbeidsflyter som lastes *ved behov* | `.github/skills/<navn>/SKILL.md` |
-| **Custom agents** | Spesialiserte roller med egne verktøy og egen modell | `.github/agents/<navn>.agent.md` *(modul 2)* |
-| **Hooks** | Automatiske kontroller som kan stoppe handlinger | `.github/hooks/*.json` *(modul 2)* |
-
-**Context engineering** betyr å bestemme *hva* modellen skal se, *når* den skal se det, og *hvor mye* den skal se.
-
-### 🎯 Ansvaret ligger hos deg
-
-Hos de fleste kunder er det ikke lagt til rette for AI på forhånd. Det finnes ingen ferdige instruksjoner, skills eller integrasjoner. Ansvaret for god kontekst ligger derfor hos hver enkelt i prosjektet. Det gode er at en harness bare er tekstfiler i repoet:
-
-- Du trenger ingen spesiell infrastruktur fra kunden.
-- Filene kan reviewes og versjoneres som all annen kode.
-- Hele teamet får nytte av dem så snart de er merget.
-
-> ⚠️ Avklar med prosjektet og kunden før du committer AI-filer til kundens repo. Det gjelder særlig hvis kunden har egne retningslinjer for bruk av AI.
+**Tips:** Skriv regler som konkrete instruksjoner. «Bruk `Result<T>` for feil, ikke exceptions» er bedre enn «Vi liker funksjonell feilhåndtering».
 
 ---
 
-## 📏 Instruksjonsfiler: grunnmuren
+## 🟢 Oppgave 3: Test med og uten harness (5 min)
 
-Copilot leser instruksjonsfilene automatisk i hver økt.
+**Mål:** Se om instruksjonsfilen faktisk gjør en forskjell.
 
-| Fil | Hvor | Merknad |
-|---|---|---|
-| `.github/copilot-instructions.md` | Rot | Leses av alle Copilot-flater. Ingen frontmatter. |
-| `AGENTS.md` | Rot eller undermapper | Åpen standard som også brukes av andre verktøy. Den nærmeste filen i mappetreet gjelder. |
-| `CLAUDE.md` | Rot | Støttes også, men velg ett format for teamet |
+**Steg:**
+1. Avslutt Copilot og start en **ny økt**, så den ikke husker noe fra oppgave 1.
+2. Gi nøyaktig samme prompt som i oppgave 1.
+3. Sammenlign med resultatet fra oppgave 1:
+   ```bash
+   git diff eksperiment/uten-harness -- src/
+   ```
+   Bytt ut `src/` med mappen der koden din ligger.
+4. Er noe fortsatt feil? Oppdater instruksjonsfilen og prøv igjen.
 
-> 💡 I Copilot CLI lager `/init` et første utkast basert på kodebasen.
-
-### Hva som hører hjemme i en instruksjonsfil
-
-✅ **Ta med:**
-- Hvordan du bygger, tester og linter, med eksakte kommandoer
-- Arkitektur i noen få linjer: hvor ligger hva?
-- Konvensjoner som *ikke* er åpenbare fra koden, som navngiving, feilhåndtering og logging
-- Ting modellen tar feil av, for eksempel: «Bruk vår `ApiClient`, ikke `fetch` direkte»
-- Hva som er forbudt, for eksempel: «Aldri endre migreringer som er kjørt»
-
-❌ **Ikke ta med:**
-- Ting modellen ser selv ved å lese koden
-- Lange forklaringer og historikk
-- Generelle råd som «skriv ren kode»
-- Hemmeligheter, kundedata eller interne URL-er som ikke skal deles
-
-**Tommelfingerregel:** Hold filen kort. Hver linje koster plass i kontekstvinduet i *hver* økt. Hvis du ikke kan forklare hvorfor en linje er der, fjerner du den.
-
-### Stibaserte instruksjoner
-
-Noen regler gjelder bare deler av koden. Legg dem i egne filer med `applyTo`:
-
-```markdown
----
-applyTo: 'src/test/**/*.java'
----
-- Bruk JUnit 5 og AssertJ, ikke Hamcrest.
-- Testnavn: `skal_<forventet>_når_<betingelse>`.
-- Bruk `TestDataBuilder` i `src/test/support` i stedet for å lage objekter manuelt.
-```
-
-Filen lastes bare inn når agenten jobber med filer som matcher mønsteret. Slik slipper du å bruke kontekst på testregler når agenten skriver frontend-kode.
+**Refleksjon:** Hvilke regler hadde størst effekt? Var det noen regler AI-en ignorerte, og hvorfor tror du det skjedde?
 
 ---
 
-## 📦 Skills: kunnskap og arbeidsflyter ved behov
-
-En **skill** er en mappe med en `SKILL.md`, og eventuelt maler, skript og eksempler. Det viktigste med skills er **progressiv lasting**:
-
-1. Ved oppstart ser agenten bare **navn og beskrivelse** for alle skills. Det koster lite kontekst.
-2. Når oppgaven passer beskrivelsen, laster agenten **innholdet** i `SKILL.md`.
-3. Andre filer i mappen leses bare hvis skillen viser til dem.
-
-Du kan derfor ha mange skills uten å fylle opp kontekstvinduet.
-
-```
-.github/skills/
-└── nytt-endepunkt/
-    ├── SKILL.md
-    ├── mal-controller.java
-    └── sjekkliste.md
-```
-
-```markdown
----
-name: nytt-endepunkt
-description: Lager et nytt REST-endepunkt etter teamets mønster (controller, service, DTO og tester). Bruk når brukeren ber om et nytt API-endepunkt.
----
-# Nytt REST-endepunkt
-
-1. Les `mal-controller.java` og følg strukturen.
-2. Lag DTO-er i `api/dto`, aldri eksponer entiteter direkte.
-3. Legg forretningslogikk i en service, ikke i controlleren.
-4. Skriv en controller-test og en service-test.
-5. Kjør `./mvnw test` og fiks feil før du sier at du er ferdig.
-6. Gå gjennom `sjekkliste.md` til slutt.
-```
-
-**`description` er det viktigste feltet.** Det er beskrivelsen agenten bruker for å avgjøre om skillen skal brukes. Skriv derfor både *hva* skillen gjør og *når* den skal brukes.
-
-### Skills som workflows
-
-En workflow er en fast rekkefølge av steg, med sjekkpunkter underveis. Den kan skrives som en skill:
-
-```markdown
----
-name: feature-workflow
-description: Teamets arbeidsflyt for nye features. Bruk når brukeren ber deg implementere en ny funksjon.
----
-1. **Forstå:** Les relevante filer. Still spørsmål hvis kravet er uklart.
-2. **Planlegg:** Skriv en kort plan og vent på godkjenning.
-3. **Test først:** Skriv tester som feiler.
-4. **Implementer:** Gjør testene grønne. Små steg.
-5. **Verifiser:** Kjør hele testsuiten og linting.
-6. **Oppsummer:** Hva ble endret, og hva bør en reviewer se på?
-```
-
-> 💡 **Prompt-filer** (`.github/prompts/*.prompt.md`) finnes fortsatt i VS Code, men de er på vei ut. Copilot CLI støtter dem ikke. Bruk skills til workflows. Da virker de både i VS Code og i CLI-en.
-
-| Når bruker du hva? | |
-|---|---|
-| Gjelder det *alltid*? | → Instruksjonsfil |
-| Gjelder det bestemte *filer*? | → Stibasert instruksjon |
-| Gjelder det en bestemt *type oppgave*? | → Skill |
-| Trenger oppgaven en egen *rolle*, egne verktøy eller en annen modell? | → Custom agent *(modul 2)* |
+☕ **Pause (5–10 min)**
 
 ---
 
-## ✅ Best practices: harnessen er kode
+## 🟢 Oppgave 4: Lag din første skill (15 min)
 
-1. **Versjoner og review den.** Harness-filer går gjennom merge request som annen kode.
-2. **Start lite.** Begynn med en kort instruksjonsfil og én skill. Legg til mer når du ser at det trengs.
-3. **Hver feil er en mulighet.** Gjør AI-en samme feil to ganger, legger du inn en regel eller forbedrer en skill.
-4. **Test harnessen.** Gi samme oppgave før og etter en endring, og sammenlign resultatene.
-5. **Gi agenten måter å sjekke seg selv på.** Tester, linting og bygg er den beste konteksten. Agenten ser selv når noe er feil.
-6. **Rydd jevnlig.** Utdaterte regler er verre enn ingen regler, fordi de forgifter konteksten.
-7. **Start ny økt ofte.** En lang samtale fylles med gammel og irrelevant kontekst. En ny økt med god harness gir ofte bedre resultat.
+**Mål:** Pakk en oppgave du gjør ofte inn i en skill som teamet kan gjenbruke.
+
+**Steg:**
+1. Velg en oppgavetype som går igjen i prosjektet. Eksempler:
+   - nytt endepunkt
+   - ny komponent
+   - ny databasetabell med migrering
+   - skrive tester for en klasse
+2. Be Copilot lage skillen:
+   > *«Lag en ny skill i `.github/skills/nytt-endepunkt/SKILL.md`. Den skal beskrive hvordan vi lager nye REST-endepunkter i dette repoet. Se på eksisterende endepunkter for å finne mønsteret. Skillen skal ha `name` og en `description` som forklarer både hva den gjør og når den skal brukes. Lag stegene som en nummerert liste, og avslutt med å kjøre testene.»*
+3. Les gjennom skillen og rett det som er feil.
+4. Sjekk at Copilot finner den:
+   ```
+   /skills list
+   ```
+   Hvis den ikke dukker opp, kjør `/skills reload`.
+5. Test skillen. Be om en ny oppgave av samme type **uten** å nevne skillen, og se om agenten velger den selv:
+   > *«Lag et endepunkt for å slette en bruker.»*
+6. Commit harnessen:
+   ```bash
+   git add -A && git commit -m "feat: første versjon av AI harness"
+   ```
+
+**Refleksjon:** Brukte agenten skillen uten at du ba om det? Hvis ikke, prøv å gjøre `description` tydeligere.
 
 ---
 
-## 🎓 Oppsummering
+## 🔵 Oppgave 5: Stibaserte instruksjoner
 
-- En **agent** er en modell som bruker verktøy i en løkke. Den vet bare det som er i konteksten.
-- En **harness** er instruksjoner, skills, agenter og regler som ligger i repoet.
-- **Instruksjonsfiler** er korte og inneholder det som alltid gjelder.
-- **Skills** lastes ved behov og passer for oppgavetyper og workflows.
-- Harnessen **versjoneres, testes og forbedres** som annen kode.
+**Mål:** Gi ulike regler til ulike deler av koden, uten å fylle opp konteksten med alt hele tiden.
 
-**I workshopen** bygger du første versjon av harnessen i ditt eget repo.
+**Steg:**
+1. Finn to områder i repoet som har ulike regler, for eksempel tester og produksjonskode, eller frontend og backend.
+2. Lag en fil per område:
+   ```
+   .github/instructions/tester.instructions.md
+   .github/instructions/frontend.instructions.md
+   ```
+   ```markdown
+   ---
+   applyTo: 'src/test/**'
+   ---
+   - ...
+   ```
+3. Flytt regler fra den globale instruksjonsfilen over i de stibaserte filene der det passer.
+4. Gi agenten en oppgave i hvert område, og sjekk at den følger riktige regler.
+
+**Refleksjon:** Hvor mye kortere ble den globale instruksjonsfilen?
+
+---
+
+## 🔵 Oppgave 6: Lag en workflow-skill
+
+**Mål:** Lag en skill som får agenten til å følge teamets arbeidsflyt fra start til slutt, med sjekkpunkter.
+
+**Steg:**
+1. Lag `.github/skills/feature-workflow/SKILL.md` med stegene:
+   - **forstå:** les kode, og spør hvis kravet er uklart
+   - **planlegg:** lag en plan og **vent på godkjenning**
+   - **test først:** skriv tester som feiler
+   - **implementer:** gjør testene grønne
+   - **verifiser:** kjør tester, lint og bygg
+   - **oppsummer:** skriv hva som er endret og hva reviewer bør se på
+2. Vis til skillen fra oppgave 4 i implementasjonssteget, for eksempel: *«For nye endepunkter: bruk skillen `nytt-endepunkt`.»*
+3. Legg en sjekkliste i en egen fil i skill-mappen, for eksempel `sjekkliste.md` med punkter for sikkerhet, logging og feilhåndtering. La `SKILL.md` vise til den, så den bare lastes inn når den trengs.
+4. Test workflowen på en ekte, liten oppgave fra backloggen.
+
+**Refleksjon:** Stoppet agenten og ventet på godkjenning av planen? Hvordan kan du formulere sjekkpunktene så de blir fulgt?
+
+---
+
+## 🔵 Oppgave 7: Stresstest harnessen
+
+**Mål:** Finn svakhetene i harnessen før kollegene dine gjør det.
+
+**Steg:**
+1. Be agenten vurdere harnessen:
+   > *«Les instruksjonsfilene og skillene i dette repoet. Finn regler som er uklare, motstridende, utdaterte eller som ikke stemmer med koden. Foreslå forbedringer, men ikke endre noe.»*
+2. Gi agenten en oppgave som er *litt utenfor* det skillene dekker. Hva skjer?
+3. Oppdater harnessen, og skriv en kort `README`-seksjon som forklarer hva harnessen består av, så resten av teamet forstår den.
+
+---
+
+## 🏁 Før du går videre
+
+Sjekk at du har:
+- ✅ en instruksjonsfil som er kort og presis
+- ✅ minst én skill som agenten finner og bruker
+- ✅ committet alt på branchen `feature/ai-harness`
+
+I neste modul bygger du videre med **subagenter, orkestrering og guardrails**.
